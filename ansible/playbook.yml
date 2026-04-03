@@ -1,0 +1,6 @@
+- name: Installation Docker and Wireproxy
+  hosts: all
+  become: yes
+  roles:
+    - docker
+    - wireproxy

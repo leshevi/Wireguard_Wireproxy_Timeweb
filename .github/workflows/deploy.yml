@@ -44,7 +44,7 @@ jobs:
     runs-on: ubuntu-latest
     # Используем только что собранный образ как окружение для всей задачи
     container:
-      image: ghcr.io/${{ github.repository }}:latest
+      image: ghcr.io/leshevi/wireguard_wireproxy_timeweb:master
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.TOKEN_GIT }}
@@ -53,7 +53,66 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Install Ansible Galaxy roles
+        run: |
+          # Определяем URL для каждой роли (или одной основной)
+          # Если ролей много, в requirements.yml должно быть несколько заглушек типа GITLAB_URL_1, GITLAB_URL_2
+          URL_DOCKER="https://${{ secrets.GITLAB_USER }}:${{ secrets.GITLAB_TOKEN }}@gitlab.com/ansible_playbooks7843206/docker.git"
+          URL_WIRE="https://${{ secrets.GITLAB_USER }}:${{ secrets.GITLAB_TOKEN }}@gitlab.com/ansible_playbooks7843206/wireproxy_linux_windows.git"
+          
+          # Заменяем заглушки в файле на реальные URL с токенами
+          # Предположим, в вашем requirements.yml строки выглядят как src: GITLAB_URL_DOCKER
+          sed -i "s|ROLE_URL_DOCKER|$URL_DOCKER|g" ansible/requirements.yml
+          sed -i "s|ROLE_URL_WIREPROXY|$URL_WIRE|g" ansible/requirements.yml
+          
+          echo "Requirements file updated."
+          
+          # Устанавливаем роли
+          ansible-galaxy install -r ansible/requirements.yml -p ./roles
+        env:
+          # Если внутри контейнера ansible-galaxy требует особых прав
+          ANSIBLE_ROLES_PATH: ./roles
+
+      - name: Setup SSH Key
+        run: |
+          echo "${{ secrets.SSH_KEY }}" > .ssh_key
+          chmod 600 .ssh_key
+      
+      - name: Generate Dynamic Inventory from Timeweb
+        run: |
+          # 1. Формируем JSON-инвентарь через API
+          curl -s -X GET "${{ secrets.TW_API_URL }}" \
+            -H "Authorization: Bearer ${{ secrets.TOKEN_TIMEWEB }}" | jq --arg target "${{ secrets.TARGET_COMMENT }}" '
+          # Фильтруем серверы по комментарию
+          [.servers[] | select(.comment == $target)] as $filtered |
+          {
+            "all": {
+              "hosts": (
+                $filtered | map({
+                  key: .name,
+                  value: {
+                    ansible_host: (.networks[].ips[] | select(.type == "ipv4") | .ip),
+                    ansible_user: "ansible",
+                    tw_comment: .comment
+                  }
+                }) | from_entries
+              )
+            }
+          }' > dynamic_inventory.json
+
+          # 2. Проверка результата (вывод в лог GitHub Actions)
+          echo "Generated Inventory:"
+          cat dynamic_inventory.json
+
+      - name: Check Connection (Ping)
+        run: |
+          # 3. Проверка связи
+          # Отключаем проверку Host Key, чтобы пайплайн не завис на вопросе (yes/no)
+          export ANSIBLE_HOST_KEY_CHECKING=False
+          ansible all -i ./dynamic_inventory.json -m ping          
+
       - name: Run Ansible Version Check
         run: |
-          ansible --version
-          ansible-playbook --help
+          export ANSIBLE_ROLES_PATH=./ansible/roles
+          ansible-lint -q --offline
+          ansible-playbook -i dynamic_inventory.json ansible/playbook.yml

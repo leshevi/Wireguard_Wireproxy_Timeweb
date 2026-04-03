@@ -1,0 +1,11 @@
+# ansible/requirements.yml
+roles:
+  # Роль для Docker
+  - name: docker_role
+    src: ROLE_URL_DOCKER
+    scm: git
+
+  # Роль для Wireproxy
+  - name: wireproxy_role
+    src: ROLE_URL_WIREPROXY
+    scm: git
