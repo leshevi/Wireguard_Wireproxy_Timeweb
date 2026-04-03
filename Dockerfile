@@ -33,7 +33,7 @@ RUN addgroup -S ansible && \
 
 COPY --chown=ansible:ansible requirements.yml .
 
-USER ansible:ansible
+# USER ansible:ansible
 
 RUN ansible-galaxy collection install -r requirements.yml || true
 
