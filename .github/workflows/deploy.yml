@@ -76,8 +76,8 @@ jobs:
       - name: Setup SSH Key
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.SSH_KEY }}" > .ssh_key
-          chmod 600 .ssh_key
+          echo "${{ secrets.SSH_KEY }}" > /root/.ssh/id_rsa
+          chmod 600 /root/.ssh/id_rsa
       
       - name: Generate Dynamic Inventory from Timeweb
         run: |
