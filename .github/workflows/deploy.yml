@@ -109,7 +109,7 @@ jobs:
           # 3. Проверка связи
           # Отключаем проверку Host Key, чтобы пайплайн не завис на вопросе (yes/no)
           export ANSIBLE_HOST_KEY_CHECKING=False
-          ansible all -i ./dynamic_inventory.json -m ping          
+          ansible all -i ./dynamic_inventory.json -m ping -vvv        
 
       - name: Run Ansible Version Check
         run: |
