@@ -109,7 +109,11 @@ jobs:
           # 3. Проверка связи
           # Отключаем проверку Host Key, чтобы пайплайн не завис на вопросе (yes/no)
           export ANSIBLE_HOST_KEY_CHECKING=False
-          ansible all -i ./dynamic_inventory.json -m ping -vvv        
+          ansible all -i ./dynamic_inventory.json -m ping -vvv
+        env:
+          ANSIBLE_HOST_KEY_CHECKING: "False"
+          # Принудительно указываем путь к ключу
+          ANSIBLE_PRIVATE_KEY_FILE: "/root/.ssh/id_rsa"       
 
       - name: Run Ansible Version Check
         run: |
