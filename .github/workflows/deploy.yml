@@ -52,6 +52,8 @@ jobs:
       ANSIBLE_ROLES_PATH: ./ansible/roles
       ANSIBLE_PRIVATE_KEY_FILE: /root/.ssh/id_rsa
       ANSIBLE_HOST_KEY_CHECKING: "False"
+      ANSIBLE_DEPRECATION_WARNINGS: "False"
+      ANSIBLE_INVENTORY: "./dynamic_inventory.json"
 
     steps:
       - name: Checkout code
@@ -116,3 +118,17 @@ jobs:
         run: |
           export ANSIBLE_ROLES_PATH
           ansible-playbook -i dynamic_inventory.json ansible/playbook.yml
+
+      - name: Send Telegram Notification
+        uses: appleboy/telegram-action@master
+        if: always() # Запускать всегда (и при успехе, и при ошибке)
+        with:
+          to: ${{ secrets.TELEGRAM_CHAT_ID }}
+          token: ${{ secrets.TELEGRAM_TOKEN }}
+          message: |
+            🚀 Deploy Status: ${{ job.status }}
+            📦 Repository: ${{ github.repository }}
+            🌿 Branch: ${{ github.ref_name }}
+            👤 Author: ${{ github.actor }}
+            
+          Check details: https://github.com{{ github.repository }}/actions/runs/${{ github.run_id }}
