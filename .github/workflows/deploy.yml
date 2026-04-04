@@ -76,10 +76,7 @@ jobs:
       - name: Setup SSH Key
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.SSH_KEY }}" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
-          # Чтобы не спрашивал подтверждение для новых IP
-          echo "StrictHostKeyChecking no" >> ~/.ssh/config
+          echo "${{ secrets.SSH_KEY }}" > .ssh_key
       
       - name: Generate Dynamic Inventory from Timeweb
         run: |
