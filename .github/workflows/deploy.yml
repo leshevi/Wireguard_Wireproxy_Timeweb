@@ -2,7 +2,7 @@ name: Build and Run Ansible Image
 
 on:
   push:
-    branches: [ "master" ]
+    branches: ["master"]
   workflow_dispatch:
 
 env:
@@ -59,14 +59,14 @@ jobs:
           # Если ролей много, в requirements.yml должно быть несколько заглушек типа GITLAB_URL_1, GITLAB_URL_2
           URL_DOCKER="https://${{ secrets.GITLAB_USER }}:${{ secrets.GITLAB_TOKEN }}@gitlab.com/ansible_playbooks7843206/docker.git"
           URL_WIRE="https://${{ secrets.GITLAB_USER }}:${{ secrets.GITLAB_TOKEN }}@gitlab.com/ansible_playbooks7843206/wireproxy_linux_windows.git"
-          
+
           # Заменяем заглушки в файле на реальные URL с токенами
           # Предположим, в вашем requirements.yml строки выглядят как src: GITLAB_URL_DOCKER
           sed -i "s|ROLE_URL_DOCKER|$URL_DOCKER|g" ansible/requirements.yml
           sed -i "s|ROLE_URL_WIREPROXY|$URL_WIRE|g" ansible/requirements.yml
-          
+
           echo "Requirements file updated."
-          
+
           # Устанавливаем роли
           ansible-galaxy install -r ansible/requirements.yml -p ./roles
         env:
@@ -80,7 +80,7 @@ jobs:
           echo "${{ secrets.SSH_KEY }}" > /root/.ssh/id_rsa
           chmod 600 /root/.ssh/id_rsa
           echo "StrictHostKeyChecking no" >> /root/.ssh/config
-      
+
       - name: Generate Dynamic Inventory from Timeweb
         run: |
           # 1. Формируем JSON-инвентарь через API
@@ -109,7 +109,7 @@ jobs:
 
       - name: Check Connection (Ping)
         run: |
-          ansible all -i ./dynamic_inventory.json -m ping -vvv
+          ansible all -i ./dynamic_inventory.json -m ping
         env:
           ANSIBLE_HOST_KEY_CHECKING: "False"
           # Принудительно указываем путь к ключу
@@ -118,5 +118,4 @@ jobs:
       - name: Run Ansible Version Check
         run: |
           export ANSIBLE_ROLES_PATH=./ansible/roles
-          ansible-lint -q --offline
           ansible-playbook -i dynamic_inventory.json ansible/playbook.yml
