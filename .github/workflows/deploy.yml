@@ -48,6 +48,10 @@ jobs:
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.TOKEN_GIT }}
+    env:
+      ANSIBLE_ROLES_PATH: ./ansible/roles
+      ANSIBLE_PRIVATE_KEY_FILE: /root/.ssh/id_rsa
+      ANSIBLE_HOST_KEY_CHECKING: "False"
 
     steps:
       - name: Checkout code
@@ -68,10 +72,7 @@ jobs:
           echo "Requirements file updated."
 
           # Устанавливаем роли
-          ansible-galaxy install -r ansible/requirements.yml -p ./roles
-        env:
-          # Если внутри контейнера ansible-galaxy требует особых прав
-          ANSIBLE_ROLES_PATH: ./roles
+          ansible-galaxy install -r ansible/requirements.yml -p ${{ env.ANSIBLE_ROLES_PATH }}
 
       - name: Setup SSH Key
         run: |
@@ -110,12 +111,8 @@ jobs:
       - name: Check Connection (Ping)
         run: |
           ansible all -i ./dynamic_inventory.json -m ping
-        env:
-          ANSIBLE_HOST_KEY_CHECKING: "False"
-          # Принудительно указываем путь к ключу
-          ANSIBLE_PRIVATE_KEY_FILE: "/root/.ssh/id_rsa"       
 
       - name: Run Ansible Version Check
         run: |
-          export ANSIBLE_ROLES_PATH=./ansible/roles
+          export ANSIBLE_ROLES_PATH
           ansible-playbook -i dynamic_inventory.json ansible/playbook.yml
